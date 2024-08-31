@@ -17,6 +17,13 @@ func NewServer(cfg Config) *Server {
 }
 
 func (s *Server) handle(w dns.ResponseWriter, req *dns.Msg) {
+	// RFC allows multiple questions, but no real resolver uses them.
+	if len(req.Question) != 1 {
+		m := new(dns.Msg)
+		m.SetRcode(req, dns.RcodeFormatError)
+		_ = w.WriteMsg(m)
+		return
+	}
 	resp, _, err := s.client.Exchange(req, s.cfg.Upstream)
 	if err != nil {
 		if s.cfg.Verbose {
