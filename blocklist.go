@@ -6,6 +6,18 @@ import (
 	"strings"
 )
 
+var preambleIPs = map[string]struct{}{
+	"::1": {}, "fe80::": {}, "ff00::": {}, "ff02::": {},
+	"255.255.255.255": {},
+}
+
+var preambleNames = map[string]struct{}{
+	"0.0.0.0": {}, "localhost": {}, "localhost.localdomain": {},
+	"local": {}, "broadcasthost": {},
+	"ip6-localhost": {}, "ip6-loopback": {}, "ip6-localnet": {},
+	"ip6-mcastprefix": {}, "ip6-allnodes": {}, "ip6-allrouters": {}, "ip6-allhosts": {},
+}
+
 type Blocklist struct {
 	set map[string]struct{}
 }
@@ -36,7 +48,14 @@ func LoadBlocklist(path string) (*Blocklist, error) {
 		if len(fields) < 2 {
 			continue
 		}
-		bl.set[fields[1]] = struct{}{}
+		if _, skip := preambleIPs[fields[0]]; skip {
+			continue
+		}
+		name := fields[1]
+		if _, skip := preambleNames[name]; skip {
+			continue
+		}
+		bl.set[name] = struct{}{}
 	}
 	return bl, sc.Err()
 }
