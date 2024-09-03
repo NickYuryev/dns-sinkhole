@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/miekg/dns"
 )
@@ -10,10 +11,11 @@ import (
 type Server struct {
 	cfg    Config
 	client *dns.Client
+	block  *Blocklist
 }
 
-func NewServer(cfg Config) *Server {
-	return &Server{cfg: cfg, client: &dns.Client{}}
+func NewServer(cfg Config, block *Blocklist) *Server {
+	return &Server{cfg: cfg, client: &dns.Client{}, block: block}
 }
 
 func (s *Server) handle(w dns.ResponseWriter, req *dns.Msg) {
@@ -21,6 +23,17 @@ func (s *Server) handle(w dns.ResponseWriter, req *dns.Msg) {
 	if len(req.Question) != 1 {
 		m := new(dns.Msg)
 		m.SetRcode(req, dns.RcodeFormatError)
+		_ = w.WriteMsg(m)
+		return
+	}
+	q := req.Question[0]
+	name := strings.TrimSuffix(q.Name, ".")
+	if s.block != nil && s.block.Contains(name) {
+		if s.cfg.Verbose {
+			log.Printf("block %s", name)
+		}
+		m := new(dns.Msg)
+		m.SetRcode(req, dns.RcodeNameError)
 		_ = w.WriteMsg(m)
 		return
 	}
