@@ -27,7 +27,7 @@ func (s *Server) handle(w dns.ResponseWriter, req *dns.Msg) {
 		return
 	}
 	q := req.Question[0]
-	name := strings.TrimSuffix(q.Name, ".")
+	name := strings.ToLower(strings.TrimSuffix(q.Name, "."))
 	if s.block != nil && s.block.Contains(name) {
 		if s.cfg.Verbose {
 			log.Printf("block %s", name)

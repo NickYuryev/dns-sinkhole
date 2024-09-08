@@ -51,7 +51,7 @@ func LoadBlocklist(path string) (*Blocklist, error) {
 		if _, skip := preambleIPs[fields[0]]; skip {
 			continue
 		}
-		name := fields[1]
+		name := strings.ToLower(fields[1])
 		if _, skip := preambleNames[name]; skip {
 			continue
 		}
@@ -61,7 +61,7 @@ func LoadBlocklist(path string) (*Blocklist, error) {
 }
 
 func (b *Blocklist) Contains(name string) bool {
-	_, ok := b.set[name]
+	_, ok := b.set[strings.ToLower(name)]
 	return ok
 }
 

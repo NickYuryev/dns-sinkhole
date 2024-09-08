@@ -41,6 +41,8 @@ func TestLoadBlocklist(t *testing.T) {
 		want bool
 	}{
 		{"googleadservices.com", true},
+		{"GoogleAdServices.COM", true},
+		{"tracker.example.com", true},
 		{"doubleclick.net", true},
 		{"example.com", false},
 		{"localhost", false},
