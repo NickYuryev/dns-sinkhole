@@ -51,9 +51,10 @@ func (s *Server) handle(w dns.ResponseWriter, req *dns.Msg) {
 }
 
 func (s *Server) ListenAndServe() error {
-	dns.HandleFunc(".", s.handle)
 	addr := fmt.Sprintf(":%d", s.cfg.Port)
-	srv := &dns.Server{Addr: addr, Net: "udp"}
+	mux := dns.NewServeMux()
+	mux.HandleFunc(".", s.handle)
+	srv := &dns.Server{Addr: addr, Net: "udp", Handler: mux}
 	log.Printf("dns listening on %s udp, upstream=%s", addr, s.cfg.Upstream)
 	return srv.ListenAndServe()
 }
