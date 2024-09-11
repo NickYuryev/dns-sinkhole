@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/miekg/dns"
@@ -16,7 +17,7 @@ func NewCache() *Cache {
 }
 
 func cacheKey(q dns.Question) string {
-	return q.Name
+	return fmt.Sprintf("%d.%d.%s", q.Qtype, q.Qclass, q.Name)
 }
 
 func (c *Cache) Get(q dns.Question) (*dns.Msg, bool) {
