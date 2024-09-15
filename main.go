@@ -9,6 +9,7 @@ func main() {
 		log.Fatalf("load blocklist: %v", err)
 	}
 	log.Printf("blocklist loaded: %d domains", block.Len())
+	startMetricsServer(cfg.MetricsPort)
 	s := NewServer(cfg, block)
 	if err := s.ListenAndServe(); err != nil {
 		log.Fatal(err)

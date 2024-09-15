@@ -5,6 +5,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/bits-and-blooms/bloom/v3"
 )
@@ -88,6 +89,8 @@ func dedupSorted(in []string) []string {
 }
 
 func (b *Blocklist) Contains(name string) bool {
+	start := time.Now()
+	defer func() { blocklistLatency.Observe(time.Since(start).Seconds()) }()
 	name = strings.ToLower(name)
 	if !b.bf.TestString(name) {
 		return false

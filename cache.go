@@ -21,7 +21,13 @@ func cacheKey(q dns.Question) string {
 }
 
 func (c *Cache) Get(q dns.Question) (*dns.Msg, bool) {
+	start := time.Now()
 	v, ok := c.c.Get(cacheKey(q))
+	label := "miss"
+	if ok {
+		label = "hit"
+	}
+	cacheGetLatency.WithLabelValues(label).Observe(time.Since(start).Seconds())
 	if !ok {
 		return nil, false
 	}
@@ -29,5 +35,7 @@ func (c *Cache) Get(q dns.Question) (*dns.Msg, bool) {
 }
 
 func (c *Cache) Set(q dns.Question, m *dns.Msg, ttl time.Duration) {
+	start := time.Now()
 	c.c.Set(cacheKey(q), m.Copy(), ttl)
+	cacheSetLatency.Observe(time.Since(start).Seconds())
 }

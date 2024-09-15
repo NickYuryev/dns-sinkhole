@@ -21,16 +21,27 @@ func NewServer(cfg Config, block *Blocklist) *Server {
 }
 
 func (s *Server) handle(w dns.ResponseWriter, req *dns.Msg) {
+	start := time.Now()
+	status := "upstream"
+	qtype := "unknown"
+	defer func() {
+		queryLatency.WithLabelValues(status, qtype).Observe(time.Since(start).Seconds())
+	}()
+
 	// RFC allows multiple questions, but no real resolver uses them.
 	if len(req.Question) != 1 {
+		status = "format_error"
 		m := new(dns.Msg)
 		m.SetRcode(req, dns.RcodeFormatError)
 		_ = w.WriteMsg(m)
 		return
 	}
 	q := req.Question[0]
+	qtype = dns.TypeToString[q.Qtype]
 	name := strings.ToLower(strings.TrimSuffix(q.Name, "."))
+
 	if cached, ok := s.cache.Get(q); ok {
+		status = "cache"
 		cached.Id = req.Id
 		_ = w.WriteMsg(cached)
 		return
@@ -39,6 +50,7 @@ func (s *Server) handle(w dns.ResponseWriter, req *dns.Msg) {
 		if s.cfg.Verbose {
 			log.Printf("block %s", name)
 		}
+		status = "block"
 		m := new(dns.Msg)
 		m.SetRcode(req, dns.RcodeNameError)
 		_ = w.WriteMsg(m)
@@ -49,6 +61,7 @@ func (s *Server) handle(w dns.ResponseWriter, req *dns.Msg) {
 		if s.cfg.Verbose {
 			log.Printf("upstream error: %v", err)
 		}
+		status = "upstream_error"
 		m := new(dns.Msg)
 		m.SetRcode(req, dns.RcodeServerFailure)
 		_ = w.WriteMsg(m)
