@@ -2,6 +2,9 @@ package main
 
 import (
 	"bufio"
+	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"sort"
 	"strings"
@@ -29,8 +32,15 @@ type Blocklist struct {
 	bf      *bloom.BloomFilter
 }
 
-func LoadBlocklist(path string) (*Blocklist, error) {
-	f, err := os.Open(path)
+func LoadBlocklist(source string) (*Blocklist, error) {
+	if strings.HasPrefix(source, "http://") || strings.HasPrefix(source, "https://") {
+		path, err := downloadBlocklist(source)
+		if err != nil {
+			return nil, err
+		}
+		source = path
+	}
+	f, err := os.Open(source)
 	if err != nil {
 		return nil, err
 	}
@@ -73,6 +83,26 @@ func LoadBlocklist(path string) (*Blocklist, error) {
 		bf.AddString(d)
 	}
 	return &Blocklist{domains: domains, bf: bf}, nil
+}
+
+func downloadBlocklist(url string) (string, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("download %s: status %d", url, resp.StatusCode)
+	}
+	tmp, err := os.CreateTemp("", "sinkhole-blocklist-*.txt")
+	if err != nil {
+		return "", err
+	}
+	defer tmp.Close()
+	if _, err := io.Copy(tmp, resp.Body); err != nil {
+		return "", err
+	}
+	return tmp.Name(), nil
 }
 
 func dedupSorted(in []string) []string {
