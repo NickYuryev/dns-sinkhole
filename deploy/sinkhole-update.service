@@ -1,0 +1,6 @@
+[Unit]
+Description=Download fresh blocklist and restart sinkhole
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'curl -sL https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts -o /etc/sinkhole/blocklist.txt && systemctl restart sinkhole'
